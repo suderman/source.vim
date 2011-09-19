@@ -14,16 +14,60 @@ let s:vimhome = $HOME.s:slash. ((s:win) ? 'vimfiles' : '.vim')
 let s:bundledir = s:vimhome.s:slash.'bundle'
 
 
+" Supa-fly public interface or something
+command! -nargs=+ Source call <SID>source(<q-args>)
+function s:source(args)
 
+  let args = split(a:args, ' ')
+  let url = remove(args, 0)
+  let command = substitute(join(args, ' '), '^\s*\(.\{-}\)\s*$', '\1', '')
+
+  " Add a bundle to the runtime path
+  let installed = s:require(url)
+
+  " If it was installed, and there's a command, do that too!
+  if ((installed) && (command != ''))
+    call s:command(url, command)
+  endif
+
+endfunction
+
+
+" raw.github.com-suderman-source.vim-master-plugin-source.vim
 
 " l337 notifcation system
 function s:notify(message)
   echo "[source.vim] ".a:message
 endfunction
 
-" Returns the repo name from a git URL
+" Burninate leading/trailing whitespace
+function s:strip(string)
+  return substitute(a:string, '^\s*\(.\{-}\)\s*$', '\1', '')
+endfunction
+
+" Decide what variety of url is
+function s:type(url)
+  let url = s:strip(a:url)
+
+  if (match(url, '.git$')>=0)
+    return 'git'
+  endif
+
+  if (match(url, '^http')>=0)
+    return 'http'
+  endif
+
+  return 'file'
+endfunction
+
+" Returns the repo name from a URL
 function s:name(url)
-  return split(split(a:url, '/')[-1], '.git')[0]
+  let type = s:type(a:url)
+
+  if (type=='git')
+    return split(split(a:url, '/')[-1], '.git')[0]
+  endif
+
 endfunction
 
 " Gimme the path to the bundle
@@ -105,21 +149,3 @@ function s:join(...)
 endfunction
 
 
-" Supa-fly public interface or something
-function s:source(args)
-
-  let args = split(a:args, ' ')
-  let url = remove(args, 0)
-  let command = substitute(join(args, ' '), '^\s*\(.\{-}\)\s*$', '\1', '')
-
- " Add a bundle to the runtime path
- let installed = s:require(url)
-
- " If it was installed, and there's a command, do that too!
- if ((installed) && (command != ''))
-   call s:command(url, command)
- endif
-
-endfunction
-
-command! -nargs=+ Source call s:source(<q-args>)
