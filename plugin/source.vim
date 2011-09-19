@@ -13,6 +13,8 @@ let s:slash = !exists("+shellslash") || &shellslash ? '/' : '\'
 let s:vimhome = $HOME.s:slash. ((s:win) ? 'vimfiles' : '.vim')
 let s:bundledir = s:vimhome.s:slash.'bundle'
 
+
+
 " I'm going to change this. This is, like, so unneccessary
 function s:encode(string)
   let string = substitute(a:string, ":\/\/", "!", "g") 
@@ -33,9 +35,14 @@ function s:notify(message)
   echo "source.vim => ".a:message
 endfunction
 
+" Returns the repo name from a git URL
+function s:name(url)
+  return split(split(a:url, '/')[-1], '.git')[0]
+endfunction
+
 " Gimme the path to the bundle
 function s:path(url)
-  return s:bundledir.s:slash.s:encode(a:url)
+  return s:bundledir.s:slash.s:name(a:url)
 endfunction
 
 function s:install(url)
@@ -121,18 +128,18 @@ endfunction
 
 " Supa-fly public interface or something
 function s:source(args)
-  " let name = input('Say hello: ')
+
   let args = split(a:args, ' ')
   let url = remove(args, 0)
   let command = substitute(join(args, ' '), '^\s*\(.\{-}\)\s*$', '\1', '')
-  
-  " Add a bundle to the runtime path
-  let installed = s:require(url)
 
-  " If it was installed, and there's a command, do that too!
-  if ((installed) && (command != ''))
-    call s:command(url, command)
-  endif
+ " Add a bundle to the runtime path
+ let installed = s:require(url)
+
+ " If it was installed, and there's a command, do that too!
+ if ((installed) && (command != ''))
+   call s:command(url, command)
+ endif
 
 endfunction
 
