@@ -15,17 +15,17 @@ let s:bundledir = s:vimhome.s:slash.'bundle'
 
 " I'm going to change this. This is, like, so unneccessary
 function s:encode(string)
-  let l:string = substitute(a:string, ":\/\/", "!", "g") 
-  let l:string = substitute(l:string, ":", ";", "g")
-  " return (s:win) ? substitute(l:string, "\/", "#", "g") : l:string 
-  return substitute(l:string, "\/", "#", "g")
+  let string = substitute(a:string, ":\/\/", "!", "g") 
+  let string = substitute(string, ":", ";", "g")
+  " return (s:win) ? substitute(string, "\/", "#", "g") : string 
+  return substitute(string, "\/", "#", "g")
 endfunction
 
 " Definitely don't need this
 function s:decode(string)
-  let l:string = substitute(a:string, "#", "/", "g") 
-  let l:string = substitute(l:string, ";", ":", "g")
-  return substitute(l:string, "!", "://", "g") 
+  let string = substitute(a:string, "#", "/", "g") 
+  let string = substitute(string, ";", ":", "g")
+  return substitute(string, "!", "://", "g") 
 endfunction
 
 " l337 notifcation system
@@ -44,25 +44,38 @@ function s:install(url)
   return 1
 endfunction
 
+" Source anything in the path ie: ~/.vim/bundle/*.vim
+" function s:source_path(path)
+"   let l:listing = system('ls -1Ap '. a:path .' | grep -v /\$')
+"   let l:files = split(l:listing, '\n')
+"   for l:file in l:files
+"     exec 'silent! source ' . l:file
+"   endfor
+" endfunction
+
+
 " Add (and install) a bundle
-function s:add(url)
-  let l:installed = 0
-  let l:paths = s:split(&rtp)
-  let l:path = s:path(a:url)
+function s:require(url)
+  let installed = 0
+  let paths = s:split(&rtp)
+  let path = s:path(a:url)
 
   " Install if necessary
-  if glob(l:path.s:slash.'*') == ''
-    let l:installed = s:install(a:url)
+  if glob(path.s:slash.'*') == ''
+    let installed = s:install(a:url)
   endif
 
   " Add bundle to runtime path
-  if index(l:paths, l:path) == -1
+  if index(paths, path) == -1
     call s:notify("Adding plugin to path - ".a:url)
-    let l:paths = insert(l:paths, l:path)
+    let paths = insert(paths, path)
+    call s:notify(path.s:slash.'plugin'.s:slash.'*.vim')
+    " call s:source_path(l:path.s:slash.'plugin'.s:slash.'*.vim')
+    " call s:source_path(l:path.s:slash.'after'.s:slash.'*.vim')
   endif
 
-  let &rtp = s:join(l:paths)
-  return l:installed
+  let &rtp = s:join(paths)
+  return installed
 endfunction
 
 function s:command(url, command)
@@ -108,16 +121,17 @@ endfunction
 
 " Supa-fly public interface or something
 function s:source(args)
-  let l:args = split(a:args, ' ')
-  let l:url = remove(l:args, 0)
-  let l:command = substitute(join(l:args, ' '), '^\s*\(.\{-}\)\s*$', '\1', '')
+  " let name = input('Say hello: ')
+  let args = split(a:args, ' ')
+  let url = remove(args, 0)
+  let command = substitute(join(args, ' '), '^\s*\(.\{-}\)\s*$', '\1', '')
   
   " Add a bundle to the runtime path
-  let l:installed = s:add(l:url)
+  let installed = s:require(url)
 
   " If it was installed, and there's a command, do that too!
-  if ((l:installed) && (l:command != ''))
-    call s:command(l:url, l:command)
+  if ((installed) && (command != ''))
+    call s:command(url, command)
   endif
 
 endfunction
