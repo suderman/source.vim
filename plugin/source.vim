@@ -15,24 +15,10 @@ let s:bundledir = s:vimhome.s:slash.'bundle'
 
 
 
-" I'm going to change this. This is, like, so unneccessary
-function s:encode(string)
-  let string = substitute(a:string, ":\/\/", "!", "g") 
-  let string = substitute(string, ":", ";", "g")
-  " return (s:win) ? substitute(string, "\/", "#", "g") : string 
-  return substitute(string, "\/", "#", "g")
-endfunction
-
-" Definitely don't need this
-function s:decode(string)
-  let string = substitute(a:string, "#", "/", "g") 
-  let string = substitute(string, ";", ":", "g")
-  return substitute(string, "!", "://", "g") 
-endfunction
 
 " l337 notifcation system
 function s:notify(message)
-  echo "source.vim => ".a:message
+  echo "[source.vim] ".a:message
 endfunction
 
 " Returns the repo name from a git URL
@@ -46,20 +32,17 @@ function s:path(url)
 endfunction
 
 function s:install(url)
-  call s:notify("Plugin not found. Downloading ".a:url)
+  call s:notify("Downloading plugin - ".a:url)
   call system('git clone '.a:url.' '.s:path(a:url))
   return 1
 endfunction
 
 " Source anything in the path ie: ~/.vim/bundle/*.vim
-" function s:source_path(path)
-"   let l:listing = system('ls -1Ap '. a:path .' | grep -v /\$')
-"   let l:files = split(l:listing, '\n')
-"   for l:file in l:files
-"     exec 'silent! source ' . l:file
-"   endfor
-" endfunction
-
+function s:source_path(path)
+  for file in split(glob(a:path),"\n")
+    exec 'silent! source '.fnameescape(file)
+  endfor
+endfunction
 
 " Add (and install) a bundle
 function s:require(url)
@@ -74,11 +57,7 @@ function s:require(url)
 
   " Add bundle to runtime path
   if index(paths, path) == -1
-    call s:notify("Adding plugin to path - ".a:url)
     let paths = insert(paths, path)
-    call s:notify(path.s:slash.'plugin'.s:slash.'*.vim')
-    " call s:source_path(l:path.s:slash.'plugin'.s:slash.'*.vim')
-    " call s:source_path(l:path.s:slash.'after'.s:slash.'*.vim')
   endif
 
   let &rtp = s:join(paths)
