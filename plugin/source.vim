@@ -169,13 +169,13 @@ function s:activate(path)
 
     " If vim has already started, also source any scripts
     if (has('vim_starting')<=0)
-      s:gsource(a:path.s:slash.'plugin'.s:slash.'**'.s:slash.'*.vim')
-      s:gsource(a:path.s:slash.'autoload'.s:slash.'**'.s:slash.'*.vim')
+      call s:gsource(a:path.s:slash.'plugin'.s:slash.'**'.s:slash.'*.vim')
+      call s:gsource(a:path.s:slash.'autoload'.s:slash.'**'.s:slash.'*.vim')
     endif
 
   " If this aint no stinkin plugin, just load any scripts inside
   else
-    s:gsource(a:path.s:slash.'**'.s:slash.'*.vim')
+    call s:gsource(a:path.s:slash.'**'.s:slash.'*.vim')
   endif
 
 endfunction
@@ -208,6 +208,7 @@ endfunction
 
 
 " Source anything in the path ie: ~/.vim/bundle/*.vim function s:gsource(path)
+function s:gsource(path)
   for file in split(glob(a:path),"\n")
     exec 'silent! source '.fnameescape(file)
   endfor
