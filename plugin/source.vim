@@ -138,8 +138,9 @@ function s:install(url)
 
   if (resource=='http')
     call s:notify("Downloading ".a:url)
+    let vimscript = substitute(split(a:url, '/')[-1], '.vim$', '', '').'.vim'
     let command = 'mkdir -p '.path.';'
-               \. 'curl -o '.path.s:slash.'plugin.vim '.url
+               \. 'curl -o '.path.s:slash.vimscript.' '.a:url
     call system(command)
   endif
 
