@@ -19,8 +19,8 @@ command! -nargs=+ Source call <SID>source(<q-args>)
 function s:source(args)
 
   let args = split(a:args, ' ')
-  let url = remove(args, 0)
-  let command = substitute(join(args, ' '), '^\s*\(.\{-}\)\s*$', '\1', '')
+  let url = s:resolve(remove(args, 0))
+  let command = s:strip(join(args, ' '))
 
   " Add a bundle to the runtime path
   let installed = s:require(url)
@@ -33,65 +33,38 @@ function s:source(args)
 endfunction
 
 
-" raw.github.com-suderman-source.vim-master-plugin-source.vim
-
-" l337 notifcation system
-function s:notify(message)
-  echo "[source.vim] ".a:message
+command! -nargs=+ S call <SID>test(<q-args>)
+function s:test(args)
+  let args = split(a:args, ' ')
+  let url = s:resolve(remove(args, 0))
+  let command = s:strip(join(args, ' '))
+  let path = s:path(url)
+  echo s:is_plugin(path)
+  " call s:notify("Downloading ".url)
+  " let command = 'mkdir -p '.path.';'
+  "            \. 'curl -o '.path.s:slash.'plugin.vim '.url
+  " echo command
 endfunction
 
-" Burninate leading/trailing whitespace
-function s:strip(string)
-  return substitute(a:string, '^\s*\(.\{-}\)\s*$', '\1', '')
-endfunction
 
-" Decide what variety of url is
-function s:type(url)
+" Transmute url into what we REALLY want
+function s:resolve(url)
+
+  " Burninate leading/trailing whitespace
   let url = s:strip(a:url)
 
-  if (match(url, '.git$')>=0)
-    return 'git'
+  " Get the repo link from any Github project page or Gist
+  if ( (match(url, 'github.com')>=0) && (match(url, 'raw.github.com')<0) && (match(url, '.git$')<0) )
+    let url = s:sub(url, ['^https://', '^http://'], 'git://') . '.git'
   endif
 
-  if (match(url, '^http')>=0)
-    return 'http'
-  endif
-
-  return 'file'
+  return url
 endfunction
 
-" Returns the repo name from a URL
-function s:name(url)
-  let type = s:type(a:url)
-
-  if (type=='git')
-    return split(split(a:url, '/')[-1], '.git')[0]
-  endif
-
-endfunction
-
-" Gimme the path to the bundle
-function s:path(url)
-  return s:bundledir.s:slash.s:name(a:url)
-endfunction
-
-function s:install(url)
-  call s:notify("Downloading plugin - ".a:url)
-  call system('git clone '.a:url.' '.s:path(a:url))
-  return 1
-endfunction
-
-" Source anything in the path ie: ~/.vim/bundle/*.vim
-function s:source_path(path)
-  for file in split(glob(a:path),"\n")
-    exec 'silent! source '.fnameescape(file)
-  endfor
-endfunction
 
 " Add (and install) a bundle
 function s:require(url)
   let installed = 0
-  let paths = s:split(&rtp)
   let path = s:path(a:url)
 
   " Install if necessary
@@ -99,20 +72,167 @@ function s:require(url)
     let installed = s:install(a:url)
   endif
 
-  " Add bundle to runtime path
-  if index(paths, path) == -1
-    let paths = insert(paths, path)
-  endif
+  " Okay, run that code!
+  call s:activate(path)
 
-  let &rtp = s:join(paths)
   return installed
 endfunction
 
-function s:command(url, command)
-  call system('cd '.s:path(a:url))
-  call system(a:command)
-  call system('cd -')
+
+" Gimme the path to the installed resource
+function s:path(url)
+  let resource = s:resource(a:url)
+  if (resource=='git')
+    let dir = split(split(a:url, '/')[-1], '.git')[0]
+  endif
+
+  return s:bundledir.s:slash.s:name(a:url)
 endfunction
+
+
+" Decide what kind of resource the url is
+function s:resource(url)
+
+  if (match(a:url, '.git$')>=0)
+    return 'git'
+  endif
+  if (match(a:url, '^http')>=0)
+    return 'http'
+  endif
+
+  return 'file'
+endfunction
+
+
+" Returns the repo name from a URL
+function s:name(url)
+  let resource = s:resource(a:url)
+
+  if (resource=='git')
+    let prefix = (match(a:url, 'gist.github.com', '')>=0) ? 'gist-' : ''
+    let name = prefix . split(split(a:url, '/')[-1], '.git')[0]
+  endif
+
+  if (resource=='http')
+    let name = split(a:url, '//')[1]
+    let name = s:sub(name, ['/','\',':','~'], '-')
+  endif
+
+  if (resource=='file')
+    let name = s:sub(a:url, ['/','\',':','~'], '-')
+  endif
+
+  return name
+endfunction
+
+
+" Install
+function s:install(url)
+  let path = s:path(a:url)
+  let resource = s:resource(a:url)
+
+  if (resource=='git')
+    call s:notify("Cloning ".a:url)
+    call system('git clone '.a:url.' '.path)
+  endif
+
+  if (resource=='http')
+    call s:notify("Downloading ".a:url)
+    let command = 'mkdir -p '.path.';'
+               \. 'curl -o '.path.s:slash.'plugin.vim '.url
+    call system(command)
+  endif
+
+  return 1
+endfunction
+
+
+" Run any commands the plugin requires
+function s:command(url, command)
+  let command = 'cd '.s:path(a:url).';'
+             \. a:command
+  call system(command)
+endfunction
+
+
+" Activate
+function s:activate(path)
+
+  if s:is_plugin(a:path)
+
+    " Add bundle to runtime path
+    let paths = s:split(&rtp)
+    if index(paths, a:path) == -1
+      let paths = insert(paths, a:path)
+    endif
+    let &rtp = s:join(paths)
+
+    " If vim has already started, also source any scripts
+    if (has('vim_starting')<=0)
+      s:gsource(a:path.s:slash.'plugin'.s:slash.'**'.s:slash.'*.vim')
+      s:gsource(a:path.s:slash.'autoload'.s:slash.'**'.s:slash.'*.vim')
+    endif
+
+  " If this aint no stinkin plugin, just load any scripts inside
+  else
+    s:gsource(a:path.s:slash.'**'.s:slash.'*.vim')
+  endif
+
+endfunction
+
+
+" Detect if this is a plugin or just a script
+function s:is_plugin(path)
+
+  " Look for directories that resemeble a plugin
+  let dirs = ['after','autoload','color','ftplugin','plugin','syntax']
+  for dir in dirs
+    if glob(a:path.s:slash.dir.s:slash.'*') != ''
+      return 1
+    endif
+  endfor
+
+  " Nothing? I guess this isn't a plugin, but just a script in a folder!
+  return 0
+endfunction
+
+
+" -----------------------------
+"  SOME HELPFUL HELPER METHODS
+" -----------------------------
+
+" l337 notifcation system
+function s:notify(string)
+  echo "[source.vim] ".a:string
+endfunction
+
+
+" Source anything in the path ie: ~/.vim/bundle/*.vim function s:gsource(path)
+  for file in split(glob(a:path),"\n")
+    exec 'silent! source '.fnameescape(file)
+  endfor
+endfunction
+
+
+" Mighty multi-pattern subtitution!
+function s:sub(string, patterns, substitution)
+  let string = a:string
+  let patterns = (type(a:patterns) == type("")) ? [a:patterns] : a:patterns
+  for pattern in patterns
+    if (pattern == '~')
+      let pattern = '\'.pattern
+    endif
+    let string = substitute(string, pattern, a:substitution, 'g')
+  endfor
+  return string
+endfunction
+
+
+" Burninate leading/trailing whitespace
+function s:strip(string)
+  return substitute(a:string, '^\s*\(.\{-}\)\s*$', '\1', '')
+endfunction
+
 
 " Tim Pope's brilliance - split a path into a list
 function s:split(path)
@@ -120,6 +240,7 @@ function s:split(path)
   let split = split(a:path,'\\\@<!\%(\\\\\)*\zs,')
   return map(split,'substitute(v:val,''\\\([\\,]\)'',''\1'',"g")')
 endfunction
+
 
 " Tim Pope's brilliance - convert a list to a path
 function s:join(...)
@@ -147,5 +268,3 @@ function s:join(...)
   endwhile
   return substitute(path,'^,','','')
 endfunction
-
-
