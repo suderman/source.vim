@@ -4,8 +4,7 @@ source.vim
 Super-fast install!
 
   `git clone git://github.com/suderman/source.vim.git`  
-  `cd source.vim`  
-  `cp -R * ~/.vim`  
+  `cp source.vim/plugin/source.vim ~/.vim/plugin/source.vim`  
 
 Usage
 -----
