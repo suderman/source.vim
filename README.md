@@ -19,3 +19,12 @@ If sourcing a repository on Github, you can source the project page instead:
 
   `Source https://github.com/mileszs/ack.vim`  
   `Source https://gist.github.com/1229444`  
+
+If installing a plugin requires a few commands, add them after the repository:
+
+  `Source git://git.wincent.com/command-t.git rake make`  
+
+Coming Soon...
+--------------
+- Forced updates when calling Source! (with a bang)
+- Automatic weekly updates (oh-my-zsh style) would be nice!
