@@ -33,18 +33,13 @@ function s:source(args)
 endfunction
 
 
-command! -nargs=+ S call <SID>test(<q-args>)
-function s:test(args)
-  let args = split(a:args, ' ')
-  let url = s:resolve(remove(args, 0))
-  let command = s:strip(join(args, ' '))
-  let path = s:path(url)
-  echo s:is_plugin(path)
-  " call s:notify("Downloading ".url)
-  " let command = 'mkdir -p '.path.';'
-  "            \. 'curl -o '.path.s:slash.'plugin.vim '.url
-  " echo command
-endfunction
+" command! -nargs=+ S call <SID>test(<q-args>)
+" function s:test(args)
+"   let args = split(a:args, ' ')
+"   let url = s:resolve(remove(args, 0))
+"   let command = s:strip(join(args, ' '))
+"   let path = s:path(url)
+" endfunction
 
 
 " Transmute url into what we REALLY want
@@ -152,6 +147,7 @@ endfunction
 function s:command(url, command)
   let command = 'cd '.s:path(a:url).';'
              \. a:command
+  call s:notify(command)
   call system(command)
 endfunction
 
@@ -215,7 +211,6 @@ function s:gsource(path)
   endfor
 endfunction
 
-
 " Mighty multi-pattern subtitution!
 function s:sub(string, patterns, substitution)
   let string = a:string
@@ -269,4 +264,40 @@ function s:join(...)
     let i += 1
   endwhile
   return substitute(path,'^,','','')
+endfunction
+
+
+" --------------------------------------------------------
+"  SYNTAX MOVED HERE TO KEEP IT ALL IN ONE BEAUTIFUL FILE
+" --------------------------------------------------------
+
+" Highlight Source properly 
+augroup source.vim
+  autocmd!
+  autocmd BufEnter {.vimrc,vimrc,.gvimrc,gvimrc,*.vim} call <SID>SourceSyntax()
+augroup END
+
+" Moved from ~/.vim/after/syntax/vim/source.vim
+function! s:SourceSyntax()
+
+  syn region sourceName	start=/^runtime / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^ru / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^runtime! / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^ru! / end=/\n/ contains=sourceURL
+
+  syn region sourceName	start=/^source / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^so / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^source! / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^so! / end=/\n/ contains=sourceURL
+
+  syn region sourceName	start=/^Source / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^So / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^Source! / end=/\n/ contains=sourceURL
+  syn region sourceName	start=/^So! / end=/\n/ contains=sourceURL
+
+  syn match sourceURL	contained "\s\S\+"
+
+  highlight link sourceName Keyword
+  highlight link sourceURL String
+
 endfunction
