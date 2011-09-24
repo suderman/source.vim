@@ -6,6 +6,10 @@ Super-fast install!
   `git clone git://github.com/suderman/source.vim.git`  
   `cp source.vim/plugin/source.vim ~/.vim/plugin/source.vim`  
 
+Start your .vimrc with this:
+
+  `runtime plugin/source.vim`
+
 Usage
 -----
 Use in a similar fashion as the built-in `source` command:
