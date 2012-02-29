@@ -13,10 +13,13 @@ let s:slash = !exists("+shellslash") || &shellslash ? '/' : '\'
 let s:vimhome = $HOME.s:slash. ((s:win) ? 'vimfiles' : '.vim')
 let s:bundledir = s:vimhome.s:slash.'bundle'
 
+let s:auto_update = 0
+let s:force_update = 0
 
 " Supa-fly public interface or something
-command! -nargs=+ Source call <SID>source(<q-args>)
-function s:source(args)
+command! -nargs=+ -bang Source call <SID>source(<bang>0, <q-args>)
+function s:source(force_update, args)
+  let s:force_update = a:force_update
 
   let args = split(a:args, ' ')
   let url = s:resolve(remove(args, 0))
@@ -30,16 +33,8 @@ function s:source(args)
     call s:command(url, command)
   endif
 
+  let s:force_update = 0
 endfunction
-
-
-" command! -nargs=+ S call <SID>test(<q-args>)
-" function s:test(args)
-"   let args = split(a:args, ' ')
-"   let url = s:resolve(remove(args, 0))
-"   let command = s:strip(join(args, ' '))
-"   let path = s:path(url)
-" endfunction
 
 
 " Transmute url into what we REALLY want
@@ -63,9 +58,7 @@ function s:require(url)
   let path = s:path(a:url)
 
   " Install if necessary
-  if glob(path.s:slash.'*') == ''
-    let installed = s:install(a:url)
-  endif
+  let installed = s:install(a:url)
 
   " Okay, run that code!
   call s:activate(path)
@@ -105,7 +98,7 @@ function s:name(url)
 
   if (resource=='git')
     let prefix = (match(a:url, 'gist.github.com', '')>=0) ? 'gist-' : ''
-    let name = prefix . split(split(a:url, '/')[-1], '.git')[0]
+    let name = prefix . split(split(a:url, '/')[-1], '\.git')[0]
   endif
 
   if (resource=='http')
@@ -126,21 +119,48 @@ function s:install(url)
   let path = s:path(a:url)
   let resource = s:resource(a:url)
 
-  if (resource=='git')
-    call s:notify("Cloning ".a:url)
-    call system('git clone '.a:url.' '.path)
+  if glob(path.s:slash.'*') == ''
+
+    if (resource=='git')
+      call s:notify("Cloning ".a:url)
+      call system('git clone '.a:url.' '.path)
+    endif
+
+    if (resource=='http')
+      call s:notify("Downloading ".a:url)
+      let vimscript = substitute(split(a:url, '/')[-1], '.vim$', '', '').'.vim'
+      let command = 'mkdir -p '.path.';'
+                 \. 'curl -o '.path.s:slash.vimscript.' '.a:url
+      call system(command)
+    endif
+
+    return 1
   endif
 
-  if (resource=='http')
-    call s:notify("Downloading ".a:url)
-    let vimscript = substitute(split(a:url, '/')[-1], '.vim$', '', '').'.vim'
-    let command = 'mkdir -p '.path.';'
-               \. 'curl -o '.path.s:slash.vimscript.' '.a:url
-    call system(command)
+  if (s:auto_update) || (s:force_update)
+
+    if (resource=='git')
+      call s:notify("Pulling ".a:url)
+      let output = system('cd '.path.';git pull')
+      call s:notify(output)
+    endif
+
+    if (resource=='http')
+      call s:notify("Re-downloading ".a:url)
+      let vimscript = substitute(split(a:url, '/')[-1], '.vim$', '', '').'.vim'
+      let command = 'rm -rf '.path.'.backup;'
+                 \. 'mv '.path.' '.path.'.backup;'
+                 \. 'mkdir -p '.path.';'
+                 \. 'curl -o '.path.s:slash.vimscript.' '.a:url
+      call system(command)
+    endif
+
+    return 1
   endif
 
-  return 1
+  return 0
 endfunction
+
 
 
 " Run any commands the plugin requires
@@ -193,6 +213,28 @@ function s:is_plugin(path)
   return 0
 endfunction
 
+
+" Check if it's time for auto updates (TODO: less shell, more vimscript)
+" Obviously much of this is taken from oh-my-zsh update system!
+function s:automatic_updates()
+
+  " Determine current epoch
+  let current_epoch = system('echo $(($(date +%s) / 60 / 60 / 24))')
+
+  " Pull the last epoch from the filesystem
+  let last_epoch = system('cat '.s:vimhome.s:slash.'last_epoch.txt')
+
+  " Check if the last_epoch is older than 6 days from the current_epoch
+  if (current_epoch - last_epoch) > 6
+
+    " Enable auto_update
+    let s:auto_update = 1
+
+    " Update the last_epoch file
+    call system('echo "'.current_epoch.'" > '.s:vimhome.s:slash.'last_epoch.txt')
+
+  endif
+endfunction
 
 " -----------------------------
 "  SOME HELPFUL HELPER METHODS
@@ -267,16 +309,24 @@ function s:join(...)
 endfunction
 
 
+" Check for automatic updates when script is loaded
+call s:automatic_updates()
+
+augroup source.vim
+  autocmd!
+
+  " Make sure autoupdates aren't called after the vimrc is loaded
+  autocmd VimEnter * let s:auto_update = 0
+
+  " Highlight Source properly 
+  autocmd BufEnter {.vimrc,vimrc,.gvimrc,gvimrc,*.vim} call <SID>SourceSyntax()
+
+augroup END
+
+
 " --------------------------------------------------------
 "  SYNTAX MOVED HERE TO KEEP IT ALL IN ONE BEAUTIFUL FILE
 " --------------------------------------------------------
-
-" Highlight Source properly 
-augroup source.vim
-  autocmd!
-  autocmd BufEnter {.vimrc,vimrc,.gvimrc,gvimrc,*.vim} call <SID>SourceSyntax()
-augroup END
-
 " Moved from ~/.vim/after/syntax/vim/source.vim
 function! s:SourceSyntax()
 
