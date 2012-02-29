@@ -39,7 +39,7 @@ Several system commands are assumed available (echo, cat, cd, mkdir, rm, mv).
 Also, if sourcing a git repository, the git command is used. And if sourcing 
 a text file over HTTP, the curl command is used. 
 
-So far, I've only really tested this with OS X 10.8.
+So far, I've only really tested this with OS X 10.7.
 
 Things to do...
 --------------
