@@ -27,17 +27,19 @@ If installing a plugin requires a few commands, add them after the repository:
 
   `Source git://git.wincent.com/command-t.git rake make`  
 
-Automatic updates occur once a week when starting Vim. This will git
-pull any repositories and re-download any other files. You can force an
-update calling the Source command with a bang.
+Automatic updates occur once a week when starting Vim. This will 
+`git pull` any repositories and re-download any other files. You can 
+force an update calling the Source command with a bang:
 
-  `Source! https://github.com/mileszs/ack.vim`
+  `Source! https://github.com/kien/ctrlp.vim`
+
+For a working example, take a look at my [vimrc](https://github.com/suderman/schala/blob/master/vimrc.vim).
 
 Requirements
 ------------
-Several system commands are assumed available (echo, cat, cd, mkdir, rm, mv). 
-Also, if sourcing a git repository, the git command is used. And if sourcing 
-a text file over HTTP, the curl command is used. 
+Several system commands are assumed available: `echo, cat, cd, mkdir, rm, mv`. 
+Also, if sourcing a git repository, the `git` command is used. And if sourcing 
+a regular text, the `curl` command is used. 
 
 So far, I've only really tested this with OS X 10.7.
 
