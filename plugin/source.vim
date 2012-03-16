@@ -28,9 +28,17 @@ function s:source(force_update, args)
   " Add a bundle to the runtime path
   let installed = s:require(url)
 
-  " If it was installed, and there's a command, do that too!
-  if ((installed) && (command != ''))
-    call s:command(url, command)
+  " If it was installed or updated
+  if (installed) 
+
+    " Generate help tags
+    call s:helptags(url)
+
+    " If there's a command, do that too!
+    if (command != '')
+      call s:command(url, command)
+    endif
+
   endif
 
   let s:force_update = 0
@@ -161,6 +169,12 @@ function s:install(url)
   return 0
 endfunction
 
+
+" Update plugin helptags
+function s:helptags(url)
+  let path = s:path(a:url).s:slash.'doc'
+  exec 'silent! helptags '.fnameescape(path)
+endfunction
 
 
 " Run any commands the plugin requires

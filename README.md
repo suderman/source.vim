@@ -37,12 +37,13 @@ For a working example, take a look at my [vimrc](https://github.com/suderman/sch
 
 Requirements
 ------------
-Several system commands are assumed available: `echo, cat, cd, mkdir, rm, mv`. 
+Several system commands are called: `echo, cat, cd, mkdir, rm, mv, date`. 
 Also, if sourcing a git repository, the `git` command is used. And if sourcing 
 a regular text, the `curl` command is used. 
 
-So far, I've only really tested this with OS X 10.7.
+I've only tested this with OS X 10.7 and Ubuntu 10.04.4 LTS.
 
 Things to do...
 --------------
-- Make this work on other platforms (Windows, Linux)
+- Write this as an actual help doc for Vim
+- Make this work on Windows (I suppose..?)
