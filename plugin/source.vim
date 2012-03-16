@@ -236,7 +236,7 @@ function s:automatic_updates()
   let current_epoch = system('echo $(($(date +%s) / 60 / 60 / 24))')
 
   " Pull the last epoch from the filesystem
-  let last_epoch = system('cat '.s:vimhome.s:slash.'last_epoch.txt')
+  let last_epoch = system('cat '.s:bundledir.s:slash.'last_update')
 
   " Check if the last_epoch is older than 6 days from the current_epoch
   if (current_epoch - last_epoch) > 6
@@ -244,8 +244,8 @@ function s:automatic_updates()
     " Enable auto_update
     let s:auto_update = 1
 
-    " Update the last_epoch file
-    call system('echo "'.current_epoch.'" > '.s:vimhome.s:slash.'last_epoch.txt')
+    " Update the last_update file
+    call system('echo "'.current_epoch.'" > '.s:bundledir.s:slash.'last_update')
 
   endif
 endfunction
